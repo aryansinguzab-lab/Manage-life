@@ -1,16 +1,18 @@
 const cacheName = 'lifemgr-v1';
 const assets = [
+  '/Manage-life/',
   '/Manage-life/index.html',
   '/Manage-life/manifest.json',
-  
-  '/Manage-life/dexie.js'
+  '/Manage-life/dexie.js', // Added missing comma here
+  '/Manage-life/chart.js', // Added this so your reports work offline
   '/Manage-life/icon.png'
 ];
 
 self.addEventListener('install', evt => {
   evt.waitUntil(
     caches.open(cacheName).then(cache => {
-      cache.addAll(assets);
+      // It's better to use addAll to ensure everything is saved
+      return cache.addAll(assets);
     })
   );
 });
