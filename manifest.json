@@ -1,16 +1,18 @@
 {
   "name": "Life Manager",
   "short_name": "LifeMgr",
-  "start_url": "/Manage-life/index.html",
+  "description": "A standalone personal management app using Dexie.js",
+  "start_url": "/Manage-life/",
   "scope": "/Manage-life/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4CAF50",
   "icons": [
     {
-      "src": "/Manage-life/icon.png",
+      "src": "icon.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
