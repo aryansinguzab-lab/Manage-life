@@ -16,7 +16,6 @@ body{font-family:'Segoe UI', Arial, sans-serif; background:var(--bg); color:var(
 
 .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
 #topBar{margin-bottom:15px; background:var(--card); padding:15px; border-radius:12px; border: 1px solid var(--border);}
-.failed { background: #f44336; color: white; }
 
 .dashboard-grid {
     display: grid;
@@ -54,9 +53,7 @@ th{background:var(--primary); color:#fff}
 
 .modal{position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); display:none; justify-content:center; align-items:center; z-index:1000}
 .modalContent{background:var(--card); padding:20px; border-radius:15px; width:95%; max-width:450px; box-sizing: border-box; overflow-y: auto; max-height: 90vh;}
-.cat-tag { font-size: 0.7em; background: var(--primary); color: white; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 4px; }
 .status-pill { font-size: 0.75em; padding: 4px 8px; border-radius: 20px; font-weight: bold; }
-.achieved { background: #4CAF50; color: white; }
 .pending { background: #FF9800; color: white; }
 
 .backup-zone { background: var(--li); padding: 10px; border-radius: 8px; border: 1px dashed var(--border); margin-top: 15px; }
@@ -157,8 +154,6 @@ th{background:var(--primary); color:#fff}
 <div class="modal" id="taskModal"><div class="modalContent">
     <h3>New Task</h3>
     <input id="taskInTitle" placeholder="Task Name">
-    <select id="taskInCat"><option value="General">General</option></select>
-    <textarea id="taskInNotes" placeholder="Notes..." rows="2"></textarea>
     <button onclick="submitTask()" style="background:var(--warn)">Save Task</button>
     <button onclick="closeModal('taskModal')" style="background:#636e72">Cancel</button>
 </div></div>
@@ -177,43 +172,26 @@ th{background:var(--primary); color:#fff}
     <label>Change Password:</label>
     <input id="newPass" type="password" placeholder="New Password">
     <button onclick="saveSettings()">Apply Changes</button>
-    
     <div class="backup-zone">
-        <h4>Data Management</h4>
-        <p style="font-size: 0.8em; margin-bottom: 10px;">Keep your data safe by downloading a backup file.</p>
         <button onclick="exportData()" style="background: #607D8B;">💾 Backup to File</button>
-        
-        <hr style="margin: 15px 0; border: 0.5px solid var(--border);">
-        
-        <label style="font-size: 0.8em;">Restore from backup:</label>
-        <input type="file" id="importFile" accept=".json" style="font-size: 0.7em; padding: 5px;">
+        <input type="file" id="importFile" accept=".json">
         <button onclick="importData()" style="background: var(--warn);">📥 Restore Data</button>
     </div>
-    
-    <button onclick="closeModal('settingsModal')" style="background:#636e72; margin-top: 15px;">Close</button>
+    <button onclick="closeModal('settingsModal')" style="background:#636e72">Close</button>
 </div></div>
 
-<div class="modal" id="reportModal"><div class="modalContent" style="max-width: 95%;">
+<div class="modal" id="reportModal"><div class="modalContent">
     <h3>Report Analysis</h3>
     <select id="reportYearSelect" onchange="updateReportChart()"></select>
-    <div style="height: 250px; margin-top:15px;"><canvas id="reportChart"></canvas></div>
-    <button onclick="closeModal('reportModal')" style="background:#f44336; margin-top:15px;">Close</button>
+    <div style="height: 250px;"><canvas id="reportChart"></canvas></div>
+    <button onclick="closeModal('reportModal')" style="background:#f44336">Close</button>
 </div></div>
 
-<script src="chart.js"></script>
-<script src="dexie.js"></script>
+<script src="https://unpkg.com/dexie@latest/dist/dexie.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-// 1. SERVICE WORKER REGISTRATION (Fixed for GitHub Pages Path)
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        // We use the specific repo path so the browser finds the file
-        navigator.serviceWorker.register('/Manage-life/sw.js')
-            .then(reg => console.log('Service worker registered!', reg))
-            .catch(err => console.error('Service worker registration failed', err));
-    });
-}
-
+// 1. Initialize Database First
 const db = new Dexie("LifeManagerDB");
 db.version(1).stores({
     tasks: '++id, date, completed',
@@ -222,129 +200,65 @@ db.version(1).stores({
     config: 'key'
 });
 
-// ... (Keep your existing settings, security, and myChart variables)
 let settings = {name:"My Life Manager"};
 let security = {p:"1234"};
 let myChart = null;
 const currentYear = new Date().getFullYear();
-async function initApp() {
-    try {
-        const s = await db.config.get('settings');
-        const sec = await db.config.get('security');
-        if(s) settings = s.val;
-        if(sec) security = sec.val;
-        applySettingsUI();
-        initReportYears();
-    } catch(e) { console.error("DB Init failed", e); }
+
+// 2. Button Handlers (Moved up so they are ready immediately)
+function openModal(id) { document.getElementById(id).style.display = "flex"; }
+function closeModal(id) { document.getElementById(id).style.display = "none"; }
+function switchView(id) { 
+    ['mainDashboard', 'taskView', 'targetView', 'cashView'].forEach(v => {
+        document.getElementById(v).style.display = (v === id) ? 'block' : 'none';
+    });
 }
 
-// --- BACKUP & RESTORE LOGIC ---
-
-async function exportData() {
-    const allTasks = await db.tasks.toArray();
-    const allEntries = await db.entries.toArray();
-    const allTargets = await db.targets.toArray();
-    const allConfig = await db.config.toArray();
-
-    const backupData = {
-        tasks: allTasks,
-        entries: allEntries,
-        targets: allTargets,
-        config: allConfig,
-        version: 1,
-        date: new Date().toISOString()
-    };
-
-    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `lifemanager_backup_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+function openEntryModal(type) {
+    document.getElementById('entType').value = type;
+    document.getElementById('entryTitle').innerText = (type === 'income') ? 'Add Income' : 'Add Expense';
+    openModal('entryModal');
 }
+function openTaskModal() { openModal('taskModal'); }
+function openTargetModal() { openModal('targetModal'); }
 
-async function importData() {
-    const fileInput = document.getElementById('importFile');
-    if (!fileInput.files[0]) return alert("Please select a backup file first.");
-
-    if (!confirm("This will overwrite your current data. Are you sure?")) return;
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        try {
-            const data = JSON.parse(e.target.result);
-            
-            // Clear current data
-            await db.tasks.clear();
-            await db.entries.clear();
-            await db.targets.clear();
-            await db.config.clear();
-
-            // Import new data
-            if(data.tasks) await db.tasks.bulkAdd(data.tasks);
-            if(data.entries) await db.entries.bulkAdd(data.entries);
-            if(data.targets) await db.targets.bulkAdd(data.targets);
-            if(data.config) await db.config.bulkAdd(data.config);
-
-            alert("Restore Successful! The app will now reload.");
-            location.reload();
-        } catch (err) {
-            alert("Error importing data. Make sure it's a valid backup file.");
-            console.error(err);
-        }
-    };
-    reader.readAsText(fileInput.files[0]);
-}
-
-// --- Existing Functions ---
-
-function initReportYears() {
-    const sel = document.getElementById('reportYearSelect');
-    let options = "";
-    for(let i = 2024; i <= 2060; i++) {
-        options += `<option value="${i}" ${i === currentYear ? 'selected' : ''}>${i}</option>`;
-    }
-    if(sel) sel.innerHTML = options;
-}
-
-function doLogin() {
-    if(document.getElementById("loginPass").value === security.p) {
-        document.getElementById("login").style.display = "none";
-        document.getElementById("app").style.display = "block";
-        refreshAllUI();
-    } else { alert("Access Denied"); }
-}
-
-function getToday() { return new Date().toISOString().split("T")[0]; }
-
-async function refreshAllUI() {
-    renderTasks(currentYear);
-    renderCashBook(currentYear);
-    renderTargets(currentYear);
-}
-
+// 3. Database Functions
 async function submitEntry() {
-    const desc = document.getElementById("entDesc").value, amt = document.getElementById("entAmt").value;
-    if (!desc || !amt) return;
-    await db.entries.add({ d: getToday(), desc, t: document.getElementById("entType").value, a: parseFloat(amt), c: document.getElementById("entCat").value });
-    closeModal('entryModal'); renderCashBook(currentYear);
+    const desc = document.getElementById("entDesc").value;
+    const amt = document.getElementById("entAmt").value;
+    const type = document.getElementById("entType").value;
+    if (!desc || !amt) return alert("Fill all fields");
+
+    await db.entries.add({ 
+        d: new Date().toISOString().split('T')[0], 
+        desc, t: type, a: parseFloat(amt), 
+        c: document.getElementById("entCat").value 
+    });
+    document.getElementById("entDesc").value = "";
+    document.getElementById("entAmt").value = "";
+    closeModal('entryModal');
+    renderCashBook(currentYear);
 }
 
 async function submitTask() {
     const title = document.getElementById("taskInTitle").value;
-    if (!title) return;
-    await db.tasks.add({title, completed: false, date: getToday()});
-    closeModal('taskModal'); renderTasks(currentYear);
+    if (!title) return alert("Enter task name");
+    await db.tasks.add({title, completed: false, date: new Date().toISOString().split('T')[0]});
+    document.getElementById("taskInTitle").value = "";
+    closeModal('taskModal');
+    renderTasks();
 }
 
 async function submitTarget() {
     const title = document.getElementById("targetInTitle").value;
-    if (!title) return;
-    await db.targets.add({title, status: 'pending', date: getToday()});
-    closeModal('targetModal'); renderTargets(currentYear);
+    if (!title) return alert("Enter target");
+    await db.targets.add({title, status: 'pending', date: new Date().toISOString().split('T')[0]});
+    document.getElementById("targetInTitle").value = "";
+    closeModal('targetModal');
+    renderTargets();
 }
 
+// 4. Rendering Logic
 async function renderCashBook(year) {
     const body = document.getElementById("cashRows");
     document.getElementById('ledgerYearLabel').innerText = year;
@@ -353,54 +267,73 @@ async function renderCashBook(year) {
     body.innerHTML = all.filter(en => new Date(en.d).getFullYear() === year).map(en => {
         const val = Number(en.a) || 0;
         en.t === "income" ? inc += val : exp += val;
-        return `<tr><td><small>${en.d}</small></td><td>${en.desc}</td><td style="color:${en.t==='income'?'green':'red'}">${val.toLocaleString()}</td><td><button onclick="delEntry(${en.id})" style="background:red;width:auto;">X</button></td></tr>`;
+        return `<tr><td>${en.d}</td><td>${en.desc}</td><td style="color:${en.t==='income'?'green':'red'}">${val.toLocaleString()}</td><td><button onclick="delEntry(${en.id})" style="background:red;width:auto;padding:5px">X</button></td></tr>`;
     }).reverse().join('');
     document.getElementById("totalInc").innerText = inc.toLocaleString();
     document.getElementById("totalExp").innerText = exp.toLocaleString();
     document.getElementById("totalBal").innerText = (inc - exp).toLocaleString();
 }
 
-async function renderTasks(year) {
+async function renderTasks() {
     const list = document.getElementById("taskList");
     const all = await db.tasks.toArray();
-    list.innerHTML = all.map(t => `<li style="background:var(--li); margin:8px 0; padding:12px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
-        <span style="${t.completed ? 'text-decoration:line-through; opacity:0.5' : ''}">${t.title}</span>
+    list.innerHTML = all.map(t => `<li style="background:var(--li); margin:8px 0; padding:12px; border-radius:8px; display:flex; justify-content:space-between;">
+        <span style="${t.completed ? 'text-decoration:line-through' : ''}">${t.title}</span>
         <div><button onclick="toggleTask(${t.id})" style="width:auto; background:blue; padding:5px;">✓</button> <button onclick="delTask(${t.id})" style="width:auto; background:red; padding:5px;">X</button></div>
     </li>`).join('');
 }
 
-async function renderTargets(year) {
+async function renderTargets() {
     const list = document.getElementById("targetList");
     const all = await db.targets.toArray();
-    list.innerHTML = all.map(t => `<li style="background:var(--li); margin:8px 0; padding:12px; border-radius:8px;">${t.title} <span class="status-pill pending">${t.status}</span></li>`).join('');
+    list.innerHTML = all.map(t => `<li style="background:var(--li); margin:8px 0; padding:12px; border-radius:8px; display:flex; justify-content:space-between;">
+        <span>${t.title}</span><button onclick="delTarget(${t.id})" style="width:auto; background:red; padding:5px;">X</button>
+    </li>`).join('');
 }
 
-async function toggleTask(id) { const t = await db.tasks.get(id); await db.tasks.update(id, {completed: !t.completed}); renderTasks(currentYear); }
-async function delTask(id) { await db.tasks.delete(id); renderTasks(currentYear); }
-async function delEntry(id) { await db.entries.delete(id); renderCashBook(currentYear); }
-
-async function saveSettings() {
-    settings.name = document.getElementById('setBizName').value;
-    const np = document.getElementById('newPass').value;
-    if(np.trim()) { security.p = np; await db.config.put({key: 'security', val: security}); }
-    await db.config.put({key: 'settings', val: settings});
-    applySettingsUI(); closeModal('settingsModal');
+// 5. App Initialization & Security
+async function initApp() {
+    try {
+        const s = await db.config.get('settings');
+        const sec = await db.config.get('security');
+        if(s) settings = s.val;
+        if(sec) security = sec.val;
+        document.getElementById('dispName').innerText = settings.name;
+        
+        // Populate years for report
+        const sel = document.getElementById('reportYearSelect');
+        for(let i = 2024; i <= 2030; i++) {
+            let opt = document.createElement('option');
+            opt.value = i; opt.innerText = i;
+            if(i === currentYear) opt.selected = true;
+            sel.appendChild(opt);
+        }
+    } catch(e) { console.log("Init error", e); }
 }
 
-function applySettingsUI() { document.getElementById('dispName').innerText = settings.name; document.getElementById('setBizName').value = settings.name; }
-function switchView(id) { ['mainDashboard', 'taskView', 'targetView', 'cashView'].forEach(v => document.getElementById(v).style.display = (v === id) ? 'block' : 'none'); }
-function openModal(id) { document.getElementById(id).style.display = "flex"; }
-function closeModal(id) { document.getElementById(id).style.display = "none"; }
-function openEntryModal(t) { document.getElementById('entType').value = t; openModal('entryModal'); }
-function openTaskModal() { openModal('taskModal'); }
-function openTargetModal() { openModal('targetModal'); }
-function toggleTheme() { const t = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark"; document.documentElement.setAttribute("data-theme", t); }
-function showYearlyReport() { openModal('reportModal'); updateReportChart(); }
-function doLogout() { location.reload(); }
+function doLogin() {
+    if(document.getElementById("loginPass").value === security.p) {
+        document.getElementById("login").style.display = "none";
+        document.getElementById("app").style.display = "block";
+        refreshAllUI();
+    } else { alert("Wrong Password"); }
+}
+
+async function refreshAllUI() { renderTasks(); renderCashBook(currentYear); renderTargets(); }
+
+// 6. Chart Logic (FIXED: Added Safety Check)
+function showYearlyReport() {
+    openModal('reportModal');
+    updateReportChart();
+}
 
 async function updateReportChart() {
+    if (typeof Chart === 'undefined') {
+        alert("Chart library failed to load. Check your internet connection.");
+        return;
+    }
     const year = parseInt(document.getElementById('reportYearSelect').value);
-    const ctx = document.getElementById("reportChart");
+    const ctx = document.getElementById("reportChart").getContext('2d');
     let incD = new Array(12).fill(0), expD = new Array(12).fill(0);
     const all = await db.entries.toArray();
     all.forEach(en => {
@@ -411,8 +344,26 @@ async function updateReportChart() {
         }
     });
     if(myChart) myChart.destroy();
-    myChart = new Chart(ctx, { type: 'bar', data: { labels: ["J","F","M","A","M","J","J","A","S","O","N","D"], datasets: [{ label: 'In', data: incD, backgroundColor: '#4CAF50' }, { label: 'Out', data: expD, backgroundColor: '#f44336' }] }, options: { responsive: true, maintainAspectRatio: false } });
+    myChart = new Chart(ctx, { 
+        type: 'bar', 
+        data: { 
+            labels: ["J","F","M","A","M","J","J","A","S","O","N","D"], 
+            datasets: [{ label: 'In', data: incD, backgroundColor: '#4CAF50' }, { label: 'Out', data: expD, backgroundColor: '#f44336' }] 
+        }, 
+        options: { responsive: true, maintainAspectRatio: false } 
+    });
 }
+
+// Data Actions
+async function toggleTask(id) { const t = await db.tasks.get(id); await db.tasks.update(id, {completed: !t.completed}); renderTasks(); }
+async function delTask(id) { await db.tasks.delete(id); renderTasks(); }
+async function delEntry(id) { await db.entries.delete(id); renderCashBook(currentYear); }
+async function delTarget(id) { await db.targets.delete(id); renderTargets(); }
+function toggleTheme() { 
+    const t = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark"; 
+    document.documentElement.setAttribute("data-theme", t); 
+}
+function doLogout() { location.reload(); }
 
 initApp();
 </script>
