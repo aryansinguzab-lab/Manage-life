@@ -1,19 +1,19 @@
 const cacheName = 'lifemgr-v1';
 const assets = [
-  '/Manage-life/',
-  '/Manage-life/index.html',
-  '/Manage-life/manifest.json',
-  '/Manage-life/dexie.js', // Added missing comma here
-  '/Manage-life/chart.js', // Added this so your reports work offline
-  '/Manage-life/icon.png'
+  './',
+  './index.html',
+  './manifest.json',
+  './dexie.js',
+  './chart.js',
+  './icon.png'
 ];
 
 self.addEventListener('install', evt => {
   evt.waitUntil(
     caches.open(cacheName).then(cache => {
-      // It's better to use addAll to ensure everything is saved
+      // we use return here to ensure the promise resolves correctly
       return cache.addAll(assets);
-    })
+    }).catch(err => console.error("Cache addAll failed:", err))
   );
 });
 
