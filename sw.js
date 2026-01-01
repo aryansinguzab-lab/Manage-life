@@ -4,16 +4,25 @@ const assets = [
   './index.html',
   './manifest.json',
   './dexie.js',
-  './chart.js',
-  './icon.png'
+  './chart.js'
 ];
 
 self.addEventListener('install', evt => {
   evt.waitUntil(
     caches.open(cacheName).then(cache => {
-      // we use return here to ensure the promise resolves correctly
       return cache.addAll(assets);
-    }).catch(err => console.error("Cache addAll failed:", err))
+    })
+  );
+});
+
+self.addEventListener('activate', evt => {
+  evt.waitUntil(
+    caches.keys().then(keys => {
+      return Promise.all(keys
+        .filter(key => key !== cacheName)
+        .map(key => caches.delete(key))
+      );
+    })
   );
 });
 
