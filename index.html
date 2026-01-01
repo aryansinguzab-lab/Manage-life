@@ -1,3 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<title>Life Manager</title>
+<style>
+:root {
+    --bg: #f5f5f5; --card: #fff; --text: #333; --border: #ccc; --li: #eee; --primary: #4CAF50; --accent: #2196F3; --warn: #FF9800;
+}
+[data-theme="dark"] {
+    --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --border: #333; --li: #2d2d2d; --primary: #66bb6a; --accent: #64b5f6;
+}
+body{font-family:'Segoe UI', Arial, sans-serif; background:var(--bg); color:var(--text); padding:10px; margin:0; transition: 0.3s;}
+
+.top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
+#topBar{margin-bottom:15px; background:var(--card); padding:15px; border-radius:12px; border: 1px solid var(--border);}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.action-card {
+    background: var(--card);
+    padding: 15px 5px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    cursor: pointer;
+    border: 1px solid var(--border);
+}
+.action-card:active { transform: scale(0.95); background: var(--li); }
+.action-card span { font-size: 24px; display: block; margin-bottom: 5px; }
+
+.view-screen { display: none; background:var(--bg); min-height: 100vh; }
+section{background:var(--card); padding:15px; border-radius:12px; border: 1px solid var(--border); margin-top: 10px;}
+
+button{cursor:pointer; background:var(--primary); color:white; border:none; font-weight:bold; padding:12px; border-radius:8px; width:100%; margin: 5px 0;}
+.back-btn { background: #f44336; margin-bottom: 15px; }
+
+input, select, textarea { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--text); box-sizing: border-box; font-size: 16px; font-family: inherit; }
+
+table{width:100%; border-collapse:collapse; margin-top:10px; font-size: 0.85em;}
+th,td{border:1px solid var(--border); padding:10px; text-align:center}
+th{background:var(--primary); color:#fff}
+
+.summary-box { display: flex; justify-content: space-around; background: var(--li); padding: 15px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; border: 1px solid var(--border); }
+#login{position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:999}
+
+.modal{position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); display:none; justify-content:center; align-items:center; z-index:1000}
+.modalContent{background:var(--card); padding:20px; border-radius:15px; width:95%; max-width:450px; box-sizing: border-box; overflow-y: auto; max-height: 90vh;}
+.status-pill { font-size: 0.75em; padding: 4px 8px; border-radius: 20px; font-weight: bold; }
+.pending { background: #FF9800; color: white; }
+
+.backup-zone { background: var(--li); padding: 10px; border-radius: 8px; border: 1px dashed var(--border); margin-top: 15px; }
+</style>
+</head>
+<body>
+
+<div id="login">
+    <section style="width: 300px; text-align: center; border:none;">
+        <h2 style="margin-bottom:20px;">MY LIFE MANAGER</h2>
+        <input id="loginPass" type="password" placeholder="Password" autofocus>
+        <button onclick="doLogin()">Enter App</button>
+    </section>
+</div>
+
+<div id="app" style="display:none">
+    <div id="mainDashboard">
+        <div id="topBar">
+            <div class="top-row">
+                <button onclick="toggleTheme()" style="width:auto; background:#9C27B0; padding:8px 15px; margin:0;">🌓 Theme</button>
+                <button onclick="doLogout()" style="width:auto; background:#f44336; padding:8px 15px; margin:0;">Exit</button>
+            </div>
+            <div style="text-align: center;">
+                <strong id="dispName" style="font-size: 1.3em; color: var(--primary);">My Life Manager</strong>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="action-card" onclick="openEntryModal('income')" style="border-top: 4px solid #4CAF50;">
+                <span>💰</span><b>Record Income</b>
+            </div>
+            <div class="action-card" onclick="openEntryModal('expense')" style="border-top: 4px solid #F44336;">
+                <span>💸</span><b>Record Expenses</b>
+            </div>
+            <div class="action-card" onclick="openTaskModal()" style="border-top: 4px solid #FF9800;">
+                <span>📝</span><b>Record To-Do</b>
+            </div>
+            <div class="action-card" onclick="openTargetModal()" style="border-top: 4px solid #00BCD4;">
+                <span>🎯</span><b>Annual Target</b>
+            </div>
+            <div class="action-card" onclick="showYearlyReport()" style="border-top: 4px solid #2196F3;">
+                <span>📊</span><b>Report</b>
+            </div>
+            <div class="action-card" onclick="openModal('settingsModal')" style="border-top: 4px solid #607D8B;">
+                <span>⚙️</span><b>Settings</b>
+            </div>
+        </div>
+
+        <div class="summary-box">
+            <div style="color:green;">+ <span id="totalInc">0</span></div>
+            <div style="color:red;">- <span id="totalExp">0</span></div>
+            <div style="border-left: 2px solid var(--border); padding-left: 10px;">Bal: <span id="totalBal">0</span></div>
+        </div>
+
+        <button onclick="switchView('taskView')" style="background:var(--accent)">📋 Open Tasks</button>
+        <button onclick="switchView('targetView')" style="background:#0097A7">🎯 Annual Targets</button>
+        <button onclick="switchView('cashView')" style="background:var(--accent)">📖 View My Finances</button>
+    </div>
+
+    <div id="taskView" class="view-screen">
+        <button class="back-btn" onclick="switchView('mainDashboard')">Back to Dashboard</button>
+        <section><h3>My Tasks</h3><ul id="taskList" style="list-style:none; padding:0;"></ul></section>
+    </div>
+
+    <div id="targetView" class="view-screen">
+        <button class="back-btn" onclick="switchView('mainDashboard')"> Back to Dashboard</button>
+        <section><h3>Annual Targets</h3><ul id="targetList" style="list-style:none; padding:0;"></ul></section>
+    </div>
+
+    <div id="cashView" class="view-screen">
+        <button class="back-btn" onclick="switchView('mainDashboard')"> Back to Dashboard</button>
+        <section>
+            <h3>Finance Ledger (<span id="ledgerYearLabel"></span>) </h3>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Date</th><th>Details</th><th>Amt</th><th>✖</th></tr></thead>
+                    <tbody id="cashRows"></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</div>
+
+<div class="modal" id="entryModal"><div class="modalContent">
+    <h3 id="entryTitle">Add Entry</h3>
+    <input id="entDesc" placeholder="Description?">
+    <input id="entAmt" type="number" placeholder="Amount">
+    <select id="entCat">
+        <option value="General">General</option>
+        <option value="Bills">Bills</option>
+        <option value="Personal">Personal</option>
+    </select>
+    <input type="hidden" id="entType">
+    <button onclick="submitEntry()">Add to Record</button>
+    <button onclick="closeModal('entryModal')" style="background:#636e72">Cancel</button>
+</div></div>
+
+<div class="modal" id="taskModal"><div class="modalContent">
+    <h3>New Task</h3>
+    <input id="taskInTitle" placeholder="Task Name">
+    <select id="taskInCat"><option value="General">General</option></select>
+    <textarea id="taskInNotes" placeholder="Notes..." rows="2"></textarea>
+    <button onclick="submitTask()" style="background:var(--warn)">Save Task</button>
+    <button onclick="closeModal('taskModal')" style="background:#636e72">Cancel</button>
+</div></div>
+
+<div class="modal" id="targetModal"><div class="modalContent">
+    <h3>New Target</h3>
+    <input id="targetInTitle" placeholder="Target Name">
+    <button onclick="submitTarget()" style="background:#00BCD4">Add Target</button>
+    <button onclick="closeModal('targetModal')" style="background:#636e72">Cancel</button>
+</div></div>
+
+<div class="modal" id="settingsModal"><div class="modalContent">
+    <h3>Profile Settings</h3>
+    <label>User Name:</label>
+    <input id="setBizName" placeholder="Your Name">
+    <label>Change Password:</label>
+    <input id="newPass" type="password" placeholder="New Password">
+    <button onclick="saveSettings()">Apply Changes</button>
+    <div class="backup-zone">
+        <h4>Data Management</h4>
+        <button onclick="exportData()" style="background: #607D8B;">💾 Backup to File</button>
+        <hr style="margin: 15px 0; border: 0.5px solid var(--border);">
+        <input type="file" id="importFile" accept=".json" style="font-size: 0.7em; padding: 5px;">
+        <button onclick="importData()" style="background: var(--warn);">📥 Restore Data</button>
+    </div>
+    <button onclick="closeModal('settingsModal')" style="background:#636e72; margin-top: 15px;">Close</button>
+</div></div>
+
+<div class="modal" id="reportModal"><div class="modalContent" style="max-width: 95%;">
+    <h3>Report Analysis</h3>
+    <select id="reportYearSelect" onchange="updateReportChart()"></select>
+    <div style="height: 250px; margin-top:15px;"><canvas id="reportChart"></canvas></div>
+    <button onclick="closeModal('reportModal')" style="background:#f44336; margin-top:15px;">Close</button>
+</div></div>
+
+<script src="chart.js"></script>
+<script src="dexie.js"></script>
+
+<script>
+// --- SERVICE WORKER ---
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('SW Registered'))
+            .catch(err => console.error('SW Failed', err));
+    });
+}
+
+// --- DATABASE ---
+const db = new Dexie("LifeManagerDB");
+db.version(1).stores({
+    tasks: '++id, date, completed',
+    entries: '++id, d, t',
+    targets: '++id, date, status',
+    config: 'key'
+});
 let settings = {name:"My Life Manager"};
 let security = {p:"1234"};
 let myChart = null;
