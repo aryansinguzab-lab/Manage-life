@@ -5,8 +5,8 @@ const assets = [
   './manifest.json',
   './dexie.js',
   './chart.js',
-  './iconn.png'
-  './icon.png
+  './iconn.png',
+  './icon.png'
   
 ];
 
