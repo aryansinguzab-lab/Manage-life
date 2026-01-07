@@ -506,6 +506,15 @@ async function updateReportChart() {
 }
 
 initApp();
+    // Register the Service Worker to enable Offline Mode
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('Offline System Ready'))
+            .catch(err => console.log('Offline System Error', err));
+    });
+}
+    
 </script>
 </body>
 </html>
