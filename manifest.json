@@ -1,26 +1,18 @@
 {
-  "name": "Life Manager Pro",
+  "name": "Life Manager",
   "short_name": "LifeMgr",
-  "description": "Complete offline personal finance and task management system.",
+  "description": "A standalone personal management app using Dexie.js",
   "start_url": "/Manage-life/",
   "scope": "/Manage-life/",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "minimal-ui"],
-  "background_color": "#f5f5f5",
+  "background_color": "#ffffff",
   "theme_color": "#4CAF50",
-  "categories": ["productivity", "finance", "lifestyle"],
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "icon.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }
