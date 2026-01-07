@@ -2,27 +2,13 @@
   "name": "Life Manager Pro",
   "short_name": "LifeMgr",
   "description": "Complete offline personal finance and task management system.",
-  "start_url": "/manage-life/",
-  "scope": "/Manage-life/",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "minimal-ui"],
   "background_color": "#f5f5f5",
   "theme_color": "#4CAF50",
   "categories": ["productivity", "finance", "lifestyle"],
-  "screenshots": [
-    {
-      "src": "screenshot-desktop.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
-    },
-    {
-      "src": "screenshot-mobile.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow"
-    }
-  ],
   "icons": [
     {
       "src": "icon-192.png",
@@ -35,12 +21,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
-    },
-    {
-      "src": "maskable-icon.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
     }
   ]
 }
