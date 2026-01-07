@@ -6,6 +6,8 @@ const assets = [
   './dexie.js',
   './chart.js',
   './iconn.png'
+  './icon.png
+  
 ];
 
 // 1. Install Event: Saves everything to the device
