@@ -2,7 +2,7 @@
   "name": "Life Manager Pro",
   "short_name": "LifeMgr",
   "description": "Complete offline personal finance and task management system.",
-  "start_url": "/Manage-life/index.html",
+  "start_url": "/manage-life/",
   "scope": "/Manage-life/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "minimal-ui"],
