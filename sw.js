@@ -4,6 +4,7 @@ const assets = [
   './index.html',
   './manifest.json',
   './dexie.js',
+  './chart.js',
   './icon2.png'
   
 ];
