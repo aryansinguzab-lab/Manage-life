@@ -1,11 +1,10 @@
-const cacheName = 'lifemgr-v1';
+const cacheName = 'schooler';
 const assets = [
   './',
   './index.html',
   './manifest.json',
   './dexie.js',
-  './chart.js',
-  './icon.png'
+  './icon2.png'
   
 ];
 
