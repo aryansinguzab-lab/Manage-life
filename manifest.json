@@ -1,13 +1,13 @@
 {
-  "name": "Life Manager",
-  "short_name": "Life manager",
-  "start_url": "/Manage-life/",
+  "name": "School support",
+  "short_name": "Schooler",
+  "start_url": "/Manage-my-school/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4CAF50",
   "icons": [
     {
-      "src": "icon.png",
+      "src": "icon2.png",
       "sizes": "192x192",
       "type": "image/png"
     }
