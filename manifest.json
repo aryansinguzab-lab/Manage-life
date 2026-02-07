@@ -1,14 +1,22 @@
 {
-  "name": "School support",
+  "name": "School Support System",
   "short_name": "Schooler",
-  "start_url": "/Manage-my-school/",
+  "description": "Administrative and Financial Management for School Proprietors",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#4CAF50",
+  "orientation": "portrait",
+  "background_color": "#f5f5f5",
+  "theme_color": "#1a237e",
   "icons": [
     {
       "src": "icon2.png",
       "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon2.png",
+      "sizes": "512x512",
       "type": "image/png"
     }
   ]
