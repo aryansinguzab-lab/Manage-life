@@ -276,7 +276,7 @@
  
 
 <div id="expiryLock">
-    <div class="lock-card"><h2>System Lock ⏳</h2><p>Trial Expired. Contact developer on Whatsapp @ +256754010923 for a forever unlock code at $4. </p><strong id="userRequestID"></strong><input type="password" id="unlockCodeInput"><button onclick="checkUnlockCode()">Activate</button></div>
+    <div class="lock-card"><h2>System Lock ⏳</h2><p>Trial Expired. Contact 0754010923</p><strong id="userRequestID"></strong><input type="password" id="unlockCodeInput"><button onclick="checkUnlockCode()">Activate</button></div>
 </div>
 <div id="trialBadge">Trial: <span id="daysLeft">--</span> days left</div>
 
@@ -636,24 +636,44 @@ async function submitTarget() {
 async function renderTasks() {
     const tasks = await db.tasks.toArray();
     const list = document.getElementById('taskList');
+    const now = new Date();
     list.innerHTML = '<h3>Administrative To-do</h3>';
     
-    list.innerHTML += tasks.map(t => `
-        <div style="background:var(--li); margin-bottom:10px; padding:12px; border-radius:8px; border-left: 5px solid ${t.status === 'completed' ? '#4CAF50' : '#FF9800'}">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                <div>
-                    <strong style="${t.status === 'completed' ? 'text-decoration:line-through; opacity:0.6;' : ''}">${t.title}</strong><br>
-                    <small>📅 Due: ${t.dueDate || 'No date'}</small>
+    list.innerHTML += tasks.map(t => {
+        const isCompleted = t.status === 'completed';
+        const isOverdue = !isCompleted && t.dueDate && new Date(t.dueDate) < now;
+        
+        // Determine status label and color
+        let statusLabel = '⏳ Pending';
+        let statusColor = '#FF9800'; // Orange
+
+        if (isCompleted) {
+            statusLabel = '✓ Done';
+            statusColor = '#4CAF50'; // Green
+        } else if (isOverdue) {
+            statusLabel = '⚠️ OVERDUE';
+            statusColor = '#f44336'; // Red
+        }
+
+        return `
+            <div style="background:var(--li); margin-bottom:10px; padding:12px; border-radius:8px; border-left: 5px solid ${statusColor}">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div>
+                        <strong style="${isCompleted ? 'text-decoration:line-through; opacity:0.6;' : ''}">${t.title}</strong><br>
+                        <small style="color: ${isOverdue ? '#f44336' : 'inherit'}; font-weight: ${isOverdue ? 'bold' : 'normal'}">
+                            📅 Due: ${t.dueDate ? t.dueDate.replace('T', ' ') : 'No date'}
+                        </small>
+                    </div>
+                    <button onclick="toggleTaskStatus(${t.id}, '${t.status}')" 
+                        style="width:auto; padding:4px 10px; font-size:0.75em; background:${statusColor}; color:white; border-radius:15px;">
+                        ${statusLabel}
+                    </button>
                 </div>
-                <button onclick="toggleTaskStatus(${t.id}, '${t.status}')" 
-                    style="width:auto; padding:4px 10px; font-size:0.7em; background:${t.status === 'completed' ? '#4CAF50' : '#FF9800'}">
-                    ${t.status === 'completed' ? '✓ Done' : '⏳ Pending'}
-                </button>
+                ${t.notes ? `<div style="margin-top:8px; font-size:0.85em; color:var(--text); font-style:italic; background:rgba(0,0,0,0.05); padding:5px; border-radius:4px;">📝 ${t.notes}</div>` : ''}
+                <button onclick="delTask(${t.id})" style="width:auto; background:none; color:red; border:none; padding:0; margin-top:5px; font-size:0.8em; cursor:pointer;">[Delete Task]</button>
             </div>
-            ${t.notes ? `<div style="margin-top:8px; font-size:0.85em; color:var(--text); font-style:italic; background:rgba(0,0,0,0.05); padding:5px; border-radius:4px;">📝 ${t.notes}</div>` : ''}
-            <button onclick="delTask(${t.id})" style="width:auto; background:none; color:red; border:none; padding:0; margin-top:5px; font-size:0.8em; cursor:pointer;">[Delete Task]</button>
-        </div>
-    `).join('') || "<p>No tasks recorded.</p>";
+        `;
+    }).join('') || "<p>No tasks recorded.</p>";
 }
 
 async function toggleTaskStatus(id, currentStatus) {
@@ -662,27 +682,37 @@ async function toggleTaskStatus(id, currentStatus) {
     renderTasks();
 }
 
-// --- TERMLY TARGETS (WITH TOGGLE) ---
 async function renderTargets() {
     const targets = await db.targets.toArray();
     const list = document.getElementById('targetList');
+    const today = new Date().toISOString().split('T')[0];
     list.innerHTML = '<h3>School Termly Targets</h3>';
 
-    list.innerHTML += targets.map(t => `
-        <div style="background:var(--card); border:1px solid var(--border); margin-bottom:10px; padding:12px; border-radius:8px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="${t.status === 'completed' ? 'text-decoration:line-through; color:gray;' : 'font-weight:bold;'}">
-                    🎯 ${t.title}
-                </span>
-                <button onclick="toggleTargetStatus(${t.id}, '${t.status}')" 
-                    style="width:auto; padding:4px 10px; font-size:0.7em; background:${t.status === 'completed' ? '#2196F3' : '#607D8B'}">
-                    ${t.status === 'completed' ? 'Achieved' : 'In Progress'}
-                </button>
+    list.innerHTML += targets.map(t => {
+        const isCompleted = t.status === 'completed';
+        const isOverdue = !isCompleted && t.dueDate && t.dueDate < today;
+        
+        let statusLabel = isCompleted ? 'Achieved' : (isOverdue ? 'OVERDUE' : 'In Progress');
+        let statusBg = isCompleted ? '#2196F3' : (isOverdue ? '#f44336' : '#607D8B');
+
+        return `
+            <div style="background:var(--card); border:1px solid var(--border); margin-bottom:10px; padding:12px; border-radius:8px; border-right: 5px solid ${statusBg}">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="${isCompleted ? 'text-decoration:line-through; color:gray;' : 'font-weight:bold;'}">
+                        🎯 ${t.title}
+                    </span>
+                    <button onclick="toggleTargetStatus(${t.id}, '${t.status}')" 
+                        style="width:auto; padding:4px 10px; font-size:0.7em; background:${statusBg}; color:white;">
+                        ${statusLabel}
+                    </button>
+                </div>
+                <div style="font-size:0.75em; color:${isOverdue ? 'red' : 'gray'}; margin-top:5px;">
+                    Target Date: ${t.dueDate || 'N/A'} ${isOverdue ? '⚠️' : ''}
+                </div>
+                <button onclick="delTarget(${t.id})" style="width:auto; background:none; color:red; border:none; padding:0; font-size:0.8em;">[Remove]</button>
             </div>
-            <div style="font-size:0.75em; color:gray; margin-top:5px;">Target Date: ${t.dueDate}</div>
-            <button onclick="delTarget(${t.id})" style="width:auto; background:none; color:red; border:none; padding:0; font-size:0.8em;">[Remove]</button>
-        </div>
-    `).join('') || "<p>No targets set for this term.</p>";
+        `;
+    }).join('') || "<p>No targets set for this term.</p>";
 }
 
 async function toggleTargetStatus(id, currentStatus) {
