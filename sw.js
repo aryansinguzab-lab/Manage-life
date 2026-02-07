@@ -1,4 +1,4 @@
-const cacheName = 'schooler';
+const cacheName = 'Schooler';
 const assets = [
   './',
   './index.html',
